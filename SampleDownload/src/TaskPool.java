@@ -49,13 +49,14 @@ public class TaskPool {
         return mExecutorService;
     }
     public void executeTask(DownloadTaskRunnable runnable){
-        runningTasks.add(runnable);
+        //runningTasks.add(runnable);
         getExecutorService().execute(runnable);
     }
-    /*
+
     public boolean closeTask(DownloadTaskRunnable runnable){
        runningTasks.get(runningTasks.indexOf(runnable));
-    }*/
+       return true;
+    }
 
 
 }

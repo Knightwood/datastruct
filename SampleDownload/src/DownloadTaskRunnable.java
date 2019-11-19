@@ -52,6 +52,9 @@ public class DownloadTaskRunnable implements Runnable {
 
     }
 
+    /**
+     * 线程之行结束的清理
+     */
     private void closeThings() {
         try {
             if (response != null) {
@@ -85,18 +88,17 @@ public class DownloadTaskRunnable implements Runnable {
                 while ((len = in.read(b)) != -1) {
 
                     if (mDownloadInfo.isPause()) {
-                        mTASK_fun.pausedDownload();
+                        mTASK_fun.pausedDownload(mDownloadInfo);
                     } else if (mDownloadInfo.isCancel()) {
-                        mTASK_fun.canceledDownload();
+                        mTASK_fun.canceledDownload(mDownloadInfo);
                     }else{
                         rf.write(b, 0, len);
                         //计算出总的下载长度
                         mDownloadInfo.splitStart[blockid] += len;
-                        mTASK_fun.updateProcess(mDownloadInfo);
                     }
 
                 }
-                mTASK_fun.downloadSucess();
+                mTASK_fun.downloadSucess(mDownloadInfo);
 
             }
 
