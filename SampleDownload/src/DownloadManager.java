@@ -1,15 +1,9 @@
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PipedReader;
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
+import java.util.ArrayList;;
 import java.util.List;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-import okhttp3.Response;
 
 public class DownloadManager {
 
@@ -107,7 +101,7 @@ public class DownloadManager {
                 //下载完成，触发通知
                 //并且，把downloading中的此downloadinfo移除，且把完成信息放入“持久化存储”
                 //调入新的下载任务开始下载
-                if (readyDownload.get(0)!=null){
+                if (!readyDownload.isEmpty()){
                     try {
                         startDownload(readyDownload.get(0));
                     }catch (IOException e){
@@ -118,6 +112,7 @@ public class DownloadManager {
             }else {
                 return false;
             }
+            System.out.println("下载成功");
             return true;
         }
     };
@@ -144,7 +139,7 @@ public class DownloadManager {
             info.splitStart[i] = i * blocksize;
             info.splitEnd[i] = (i + 1) * blocksize - 1;
         }
-        info.splitEnd[threadNum]=info.getFileLength();
+        info.splitEnd[threadNum-1]=info.getFileLength();
     }
 
     /**

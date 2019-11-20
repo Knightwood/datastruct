@@ -10,6 +10,12 @@ public class DownloadInfo {
      * 在设置中更改下载线程数量而导致出错
      */
     private int completeNum=0;
+    /**
+     * 这个变量用于下载暂停时统计线程数量，
+     * 达到所用的线程数量就意味着这个文件的下载线程就都暂停了，可以进行其他的操作。
+     */
+    private int threadUse;
+
     private boolean pause=false;
     private boolean cancel=false;
     /**
@@ -17,11 +23,7 @@ public class DownloadInfo {
      * 正在暂停状态的任务
      */
     private int threadNum;
-    /**
-     * 这个变量用于下载暂停时统计线程数量，
-     * 达到所用的线程数量就意味着这个文件的下载线程就都暂停了，可以进行其他的操作。
-     */
-    private int threadUse;
+
     public long splitStart[]=null;
     public long splitEnd[]=null;
 

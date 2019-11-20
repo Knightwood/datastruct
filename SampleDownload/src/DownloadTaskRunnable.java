@@ -6,14 +6,10 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 
 import okhttp3.Response;
-import sun.rmi.runtime.Log;
 
 public class DownloadTaskRunnable implements Runnable {
 
-    public static final int TYPE_SUCCESS = 0;
-    public static final int TYPE_FAILED = 1;
-    public static final int TYPE_PAUSED = 2;
-    public static final int TYPE_CANCELED = 3;
+
     private static final String TAG = "下载信息";
 
     private int blockid;
@@ -27,7 +23,7 @@ public class DownloadTaskRunnable implements Runnable {
     private Response response;
     private InputStream in = null;
 
-    public DownloadTaskRunnable(DownloadInfo info, int blockid,DOWNLOAD_TASK_FUN Interface) {
+    public DownloadTaskRunnable(DownloadInfo info, int blockid, DOWNLOAD_TASK_FUN Interface) {
         this.mDownloadInfo = info;
         this.blockid = blockid;
         mOkhttpManager = OkhttpManager.getInstance();
@@ -40,7 +36,7 @@ public class DownloadTaskRunnable implements Runnable {
      */
     private void initFile() {
         try {
-            response=OkhttpManager.getInstance().getResponse(mDownloadInfo,blockid);
+            response = OkhttpManager.getInstance().getResponse(mDownloadInfo, blockid);
             System.out.println("fileName=" + mDownloadInfo.getFileName() + " 每个线程负责下载文件大小contentLength=" + response.body().contentLength()
                     + " 开始位置start=" + mDownloadInfo.splitStart[blockid] + "结束位置end=" + mDownloadInfo.splitEnd[blockid] + " threadId=" + blockid);
             file = new File(mDownloadInfo.getPath() + mDownloadInfo.getFileName());
@@ -63,7 +59,7 @@ public class DownloadTaskRunnable implements Runnable {
             if (rf != null) {
                 rf.close();
             }
-            if (in!=null){
+            if (in != null) {
                 in.close();
             }
         } catch (IOException e) {
@@ -91,7 +87,7 @@ public class DownloadTaskRunnable implements Runnable {
                         mTASK_fun.pausedDownload(mDownloadInfo);
                     } else if (mDownloadInfo.isCancel()) {
                         mTASK_fun.canceledDownload(mDownloadInfo);
-                    }else{
+                    } else {
                         rf.write(b, 0, len);
                         //计算出总的下载长度
                         mDownloadInfo.splitStart[blockid] += len;
@@ -107,7 +103,7 @@ public class DownloadTaskRunnable implements Runnable {
             e.printStackTrace();
         } catch (NullPointerException e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             closeThings();
         }
 
