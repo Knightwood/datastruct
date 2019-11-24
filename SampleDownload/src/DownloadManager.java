@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;;
 import java.util.List;
 
-
 public class DownloadManager {
 
     private volatile static DownloadManager mDownloadManager;
@@ -15,7 +14,7 @@ public class DownloadManager {
     private List<DownloadInfo> downloading;
     private List<DownloadInfo> pausedownload;
 
-    private int downloadNumLimit=0;
+    private int downloadNumLimit = 0;
 
     public static DownloadManager getInstance() {
         if (mDownloadManager == null) {
@@ -30,12 +29,12 @@ public class DownloadManager {
     }
 
     /**
-     *              超过这个限制，把任务加入readydownload
+     * 超过这个限制，把任务加入readydownload
      */
     private DownloadManager() {
         //获取配置文件里的下载数量限制，赋值给downloadNumLimit
         //还没写配置文件，这里用5暂时代替
-        downloadNumLimit=5;
+        downloadNumLimit = 5;
 
         downloading = new ArrayList<>();
 
@@ -48,7 +47,7 @@ public class DownloadManager {
     /**
      * 线程中执行的任务，在遇到下载成功，失败，取消，暂停，更新进度时所使用
      */
-    private DOWNLOAD_TASK_FUN mTASK_fun=new DOWNLOAD_TASK_FUN() {
+    private DOWNLOAD_TASK_FUN mTASK_fun = new DOWNLOAD_TASK_FUN() {
 
         /**
          * @param info 下载信息
@@ -57,31 +56,18 @@ public class DownloadManager {
          * 文件的多个线程下载都已经暂停，把其从正在下载中移除，放入暂停下载
          */
         @Override
-        public synchronized boolean pausedDownload(DownloadInfo info) {
-            int i=info.setThreadUse(1);
-            if (i==info.getThreadNum()){
-                downloading.remove(info);
-                pausedownload.add(info);
-            }
-            return true;
-        }
-
-        /**
-         * @param info 下载信息
-         * @return
-         * 每条线程都会调用，那么每次一个线程调用，当threaduse累加等于线程数时
-         * 文件的多个线程下载都已经取消，此时删除文件
-         */
-        @Override
-        public synchronized boolean canceledDownload(DownloadInfo info) {
-
-            int i=info.setThreadUse(1);
-            if (i==info.getThreadNum()){
-                downloading.remove(info);
-                //删除文件
-                File file=new File(info.getPath()+info.getFileName());
-                if (file.exists()&&file.isFile()){
-                    file.delete();
+        public synchronized boolean downloadPaused(DownloadInfo info) {
+            info.setblockPauseNum(1);
+            //所有下载文件的线程已经暂停
+            if (info.getblockPauseNum()) {
+                //如果文件取消下载
+                if (info.isCancel()){
+                    downloading.remove(info);
+                    deleteFile(info);
+                }else{
+                    //如果只是暂停
+                    downloading.remove(info);
+                    pausedownload.add(info);
                 }
             }
             return true;
@@ -97,35 +83,36 @@ public class DownloadManager {
         public synchronized boolean downloadSucess(DownloadInfo info) {
 
             info.setCompleteNum();
-            if (info.getCompleteNum()==info.getThreadNum()){
+            if (info.isDownloadSuccess()) {
                 //下载完成，触发通知
                 //并且，把downloading中的此downloadinfo移除，且把完成信息放入“持久化存储”
                 //调入新的下载任务开始下载
-                if (!readyDownload.isEmpty()){
+                if (!readyDownload.isEmpty()) {
                     try {
                         startDownload(readyDownload.get(0));
-                    }catch (IOException e){
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
 
                 }
-            }else {
+            } else {
                 return false;
             }
             System.out.println("下载成功");
             return true;
         }
     };
-
+//--------------------------------------------------------------------
     /**
      * @param info downloadinfo
-     * @return 加工信息，生成文件分块下载信息等。
+     * @return
+     * 加工信息，生成文件分块下载信息等。
      */
     private void processInfo(DownloadInfo info) throws IOException {
         //用于文件下载的线程数
         int threadNum = info.getThreadNum();
         info.setFileLength(mOkhttpManager.getFileLength(info.getUrl()));
-        System.out.println(" 文件总大小"+info.getFileLength());
+        System.out.println(" 文件总大小" + info.getFileLength());
 
         //文件的分块大小
         long blocksize = info.getFileLength() / threadNum;
@@ -139,7 +126,7 @@ public class DownloadManager {
             info.splitStart[i] = i * blocksize;
             info.splitEnd[i] = (i + 1) * blocksize - 1;
         }
-        info.splitEnd[threadNum-1]=info.getFileLength();
+        info.splitEnd[threadNum - 1] = info.getFileLength();
     }
 
     /**
@@ -147,39 +134,87 @@ public class DownloadManager {
      * @throws IOException
      */
     public void startDownload(DownloadInfo info) throws IOException {
-
-        //限制下载，超过限制的放入readyDownload的零号位置，等当前下载任务完成再从0位置取出来下载
-        if (downloading.size()==downloadNumLimit){
-            //加入准备下载
-            readyDownload.add(0,info);
-        }else {
-            //处理信息
-            processInfo(info);
-
-            //File file = new File(info.getPath() + info.getFileName());
-
+        if (info.isResume()){
             int i = info.getThreadNum();
             for (int j = 0; j < i; j++) {
-                TaskPool.getInstance().executeTask(new DownloadTaskRunnable(info, j,mTASK_fun));
+                TaskPool.getInstance().executeTask(new DownloadTaskRunnable(info, j, mTASK_fun));
             }
+        }else{
+            //全新开始的下载
+            //限制下载，超过限制的放入readyDownload的零号位置，等当前下载任务完成再从0位置取出来下载
+            if (downloading.size() == downloadNumLimit) {
+                //加入准备下载
+                readyDownload.add(0, info);
+            } else {
+                //处理信息
+                processInfo(info);
 
-            //加入下载队列
-            downloading.add(info);
+                int i = info.getThreadNum();
+                for (int j = 0; j < i; j++) {
+                    TaskPool.getInstance().executeTask(new DownloadTaskRunnable(info, j, mTASK_fun));
+                }
+
+                //加入下载队列
+                downloading.add(info);
+            }
         }
 
         //重置threadUse
-        info.setThreadUse(0);
+        info.setblockPauseNum(0);
 
     }
 
+    /**
+     * @param info 下载信息
+     *             修改下载信息的暂停标记，使得下载文件的所有线程暂停文件块的下载
+     */
     public void pauseDownload(DownloadInfo info) {
         info.setPause(true);
     }
 
+    /**
+     * @param info 下载信息
+     *           修改下载信息的取消下载标记，使得下载文件的所有线程取消文件块的下载
+     *             取消下载的流程实现暂停，然后再删除文件
+     */
     public void cancelDownload(DownloadInfo info) {
         info.setCancel(true);
+        pauseDownload(info);
 
+    }
 
+    /**
+     * @param info 下载信息
+     *             删除文件
+     */
+    private void deleteFile(DownloadInfo info) {
+        File file = new File(info.getPath() + info.getFileName());
+        if (file.exists() && file.isFile()) {
+            file.delete();
+        }
+        //+还要根据cancel标记决定是否要删除记录
+    }
+
+    /**
+     * @param info 下载信息
+     *             继续下载
+     *             判断downloading列表是否满了，如果满了，放进ready列表
+     */
+    public void resumeDownload(DownloadInfo info) {
+        info.setPause(false);
+
+        pausedownload.remove(info);
+        if (downloading.size()==downloadNumLimit){
+            readyDownload.add(info);
+        }else{
+            downloading.add(info);
+            try{
+                startDownload(info);
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+
+        }
     }
 
     /**
@@ -188,12 +223,12 @@ public class DownloadManager {
      * 文件的下载线程数就是文件分块的标号，
      * 那么分块的结束减去分块的开始就是未下载的部分
      */
-    public long getProgressRate(DownloadInfo info){
-        long unDownloadPart=0;
+    public long getProgressRate(DownloadInfo info) {
+        long unDownloadPart = 0;
         for (int i = 0; i < info.getThreadNum(); i++) {
-           unDownloadPart+= info.splitEnd[i]-info.splitStart[i];
+            unDownloadPart += info.splitEnd[i] - info.splitStart[i];
         }
-        return 1-(unDownloadPart/info.getFileLength());
+        return 1 - (unDownloadPart / info.getFileLength());
     }
 
 }

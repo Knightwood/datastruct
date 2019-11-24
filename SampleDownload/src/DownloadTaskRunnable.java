@@ -37,8 +37,10 @@ public class DownloadTaskRunnable implements Runnable {
     private void initFile() {
         try {
             response = OkhttpManager.getInstance().getResponse(mDownloadInfo, blockid);
+
             System.out.println("fileName=" + mDownloadInfo.getFileName() + " 每个线程负责下载文件大小contentLength=" + response.body().contentLength()
                     + " 开始位置start=" + mDownloadInfo.splitStart[blockid] + "结束位置end=" + mDownloadInfo.splitEnd[blockid] + " threadId=" + blockid);
+
             file = new File(mDownloadInfo.getPath() + mDownloadInfo.getFileName());
             rf = new RandomAccessFile(file, "rw");
             rf.seek(mDownloadInfo.splitStart[blockid]);
@@ -70,31 +72,32 @@ public class DownloadTaskRunnable implements Runnable {
     @Override
     public void run() {
         try {
-            initFile();
+
+            initFile();//初始化处理
 
             if (response != null) {
                 this.in = response.body().byteStream();
 
                 byte b[] = new byte[1024];
 
-                //是记录现在开始下载的长度
-                //long lengthNow = mDownloadInfo.splitStart[blockid];
                 //从流中读取的数据长度
                 int len;
-                while ((len = in.read(b)) != -1) {
+                //流没有读尽和没有暂停时执行循环以写入文件
+                while (((len = in.read(b)) != -1)&&!mDownloadInfo.isPause()) {
 
-                    if (mDownloadInfo.isPause()) {
-                        mTASK_fun.pausedDownload(mDownloadInfo);
-                    } else if (mDownloadInfo.isCancel()) {
-                        mTASK_fun.canceledDownload(mDownloadInfo);
-                    } else {
+                        //+这里应该再添加一些resumeDownload的处理
                         rf.write(b, 0, len);
                         //计算出总的下载长度
                         mDownloadInfo.splitStart[blockid] += len;
-                    }
 
                 }
-                mTASK_fun.downloadSucess(mDownloadInfo);
+                //流没有读尽且暂停时的处理
+                if ((mDownloadInfo.isPause())&&len!=-1) {
+                    mTASK_fun.downloadPaused(mDownloadInfo);
+                }else{
+                    //分块下载成功
+                    mTASK_fun.downloadSucess(mDownloadInfo);
+                }
 
             }
 

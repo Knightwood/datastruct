@@ -2,6 +2,7 @@
 import java.io.IOException;
 
 import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -34,11 +35,12 @@ public class OkhttpManager {
      * @return 返回response
      * @throws IOException
      */
-    public Response getResponse(DownloadInfo info,int blockid) throws IOException {
+    public Response getResponse(DownloadInfo info, int blockid) throws IOException {
         Request request = new Request.Builder()
                 .url(info.getUrl())
                 .addHeader("Range", "bytes=" + info.splitStart[blockid] + "-" + info.splitEnd[blockid])
                 .build();
+
         return mOkHttpClient.newCall(request).execute();
     }
 

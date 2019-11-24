@@ -1,5 +1,4 @@
 
-
 public class DownloadInfo {
     private String url;
     private String fileName;
@@ -9,17 +8,28 @@ public class DownloadInfo {
      * completeNum等于threadNum，则，下载完成。这里所用来判断的threadNum是downloadinfo中的，为防止
      * 在设置中更改下载线程数量而导致出错
      */
-    private int completeNum=0;
+    private int blockCompleteNum =0;
     /**
      * 这个变量用于下载暂停时统计线程数量，
-     * 达到所用的线程数量就意味着这个文件的下载线程就都暂停了，可以进行其他的操作。
+     * 达到下载文件分配的线程数量（threadNum）就意味着这个文件的下载线程就都暂停了，可以进行其他的操作。
      */
-    private int threadUse;
+    private int blockPauseNum;
 
+    /**
+     * 当前文件下载是否已暂停
+     */
     private boolean pause=false;
+    /**
+     * 当前文件下载是否已取消
+     */
     private boolean cancel=false;
     /**
-     * 所用多少线程下载，若当前任务正在下载，那设置中更改线程数量不会被应用到这个正在下载或
+     * 与暂停标记互斥，startdownload会检查resume标记决定是继续下载还是全新的开始
+     */
+    private  boolean resume=false;
+    /**
+     * 下载这个文件而分配的线程数量。
+     * 若当前任务正在下载，那设置中更改线程数量不会被应用到这个正在下载或
      * 正在暂停状态的任务
      */
     private int threadNum;
@@ -32,14 +42,22 @@ public class DownloadInfo {
      */
     private long fileLength;
     /**
-     * 当前已下载的大小
+     * 当前总文件已下载的大小
      */
     private long totalProcress;
 
     /**
-     * 下载过程中文件分块大小
+     * 下载时根据分配线程数量（threadNum）决定的文件分块大小
      */
     private long blockSize;
+
+    /**
+     * 是否下载完成的标记
+     */
+    private  boolean downloadSuccess;
+
+
+
 
     /**
      * @param url 下载地址
@@ -56,7 +74,8 @@ public class DownloadInfo {
         }
         if (this.path == null) {
             //默认路径
-            this.path = "C:\\Users\\Kiylx\\Desktop\\新建文件夹";
+            this.path="C:\\Users\\Kiylx\\Desktop\\新建文件夹";
+            //this.path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
         }
 
         this.threadNum=threadNum;
@@ -121,6 +140,7 @@ public class DownloadInfo {
     }
 
     public void setPause(boolean pause) {
+        this.resume= !pause;
         this.pause = pause;
     }
 
@@ -132,12 +152,20 @@ public class DownloadInfo {
         this.cancel = cancel;
     }
 
-    public int getCompleteNum() {
-        return completeNum;
+    public int getBlockCompleteNum() {
+        return blockCompleteNum;
     }
 
+    /**
+     * manager中。文件的每个下载线程在下载完成后会调用这个方法，
+     * 当completeNum增加到下载文件所分配的线程数的时候，意味着所有分块已经下载完成。
+     * 可以将downloadSuccess标记为true
+     */
     public void setCompleteNum() {
-        this.completeNum+=1;
+
+        if ((this.blockCompleteNum +=1)==this.threadNum){
+            this.downloadSuccess =true;
+        }
     }
 
     public long getBlockSize() {
@@ -148,11 +176,40 @@ public class DownloadInfo {
         this.blockSize = blockSize;
     }
 
-    public int setThreadUse(int i) {
+    /**
+     * @return  真或假
+     * 所有分块，下载暂停时都会会累加blockPauseNum，
+     * 直到等于文件下载所分配的线程数时返回true
+     */
+    public  boolean getblockPauseNum(){
+        if (this.blockPauseNum==this.threadNum){
+         return true;
+        }else{
+            return false;
+        }
+    }
+
+    /**
+     * @param i 标记是否重置，若是0以外的数字，把1累加给blockPauseNum
+     */
+    public void setblockPauseNum(int i) {
         if (i==0){
-            this.threadUse=0;
+            this.blockPauseNum =0;
         }else
-        this.threadUse += 1;
-        return this.threadUse;
+        this.blockPauseNum += 1;
+    }
+
+    public boolean isDownloadSuccess() {
+        return downloadSuccess;
+    }
+
+    private void setDownloadSuccess(boolean downloadSuccess) {
+        this.downloadSuccess = downloadSuccess;
+    }
+    public void setResume(boolean b){
+        this.resume=b;
+    }
+    public boolean isResume() {
+        return resume;
     }
 }

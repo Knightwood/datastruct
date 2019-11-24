@@ -1,4 +1,3 @@
-import com.sun.org.apache.xerces.internal.xs.StringList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,7 +11,7 @@ public class Main {
         List list = new ArrayList<String>();
         list.add("adwd");
         System.out.println(list.isEmpty());
-        /*
+
         DownloadManager manager=DownloadManager.getInstance();
         DownloadInfo info1=new DownloadInfo("https://raw.githubusercontent.com/guolindev/eclipse/master/eclipse-inst-win64.exe",null,null,8);
 
@@ -20,7 +19,7 @@ public class Main {
             manager.startDownload(info1);
         } catch (IOException e) {
             e.printStackTrace();
-        }*/
+        }
 
 
 
