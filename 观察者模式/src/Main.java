@@ -1,3 +1,5 @@
+import java.io.IOException;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -18,5 +20,14 @@ public class Main {
         weatherData2.setMeasurements(80, 65, 30.4f);
         weatherData2.setMeasurements(82, 70, 29.2f);
         weatherData2.setMeasurements(78, 90, 29.2f);
+
+        DownloadManager manager = DownloadManager.getInstance();
+        DownloadInfo info1 = new DownloadInfo("https://raw.githubusercontent.com/guolindev/eclipse/master/eclipse-inst-win64.exe", null, null, 8);
+
+        try {
+            manager.startDownload(info1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
