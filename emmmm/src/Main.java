@@ -11,7 +11,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import static tool.FileTools.unZipFile;
+import static tool.FileTools.*;
 
 public class Main {
 
@@ -64,7 +64,9 @@ public class Main {
     }
     public static void testzip(){
         try {
-            unZipFile("C:/Users/123/Desktop/hu.zip", "D:/we");
+            //unZipFile("C:/Users/123/Desktop/hu.zip", "D:/we");
+            //zipFile("D:/we","D:/wee","ikl",false,true);
+            pauseFile("D:/we","D:/wee");
         } catch (IOException e) {
             e.printStackTrace();
         }
