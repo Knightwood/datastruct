@@ -166,7 +166,7 @@ public class FileTools {
                     byte[] b = new byte[1024];
                     int len = 0;
                     while ((len = bis.read(b)) != -1) {
-                        bos.write(b);
+                        bos.write(b,0,len);
                     }
                 }
             } catch (IOException e) {
@@ -229,8 +229,8 @@ public class FileTools {
                 while ((len = bis.read(b)) != -1) {
                     bos.write(b, 0, len);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            }catch (IndexOutOfBoundsException | IOException f){
+                f.printStackTrace();
             }
         } else {//若源文件是文件夹，在targetPath下新建此文件夹，然后遍历此文件夹
             String nextTargetPath = targetPath.getPath() + "/" + sourceFile.getName();
